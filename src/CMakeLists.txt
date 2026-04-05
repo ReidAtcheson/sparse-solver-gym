@@ -1,5 +1,5 @@
 add_library(sparse_solver_gym STATIC
-    sample.cpp
+    solver_gym.cpp
 )
 
 target_link_libraries(sparse_solver_gym

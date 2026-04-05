@@ -3,7 +3,7 @@ include(GoogleTest)
 
 add_executable(sparse_solver_gym_tests
     json_test.cpp
-    sample_test.cpp
+    solver_gym_test.cpp
 )
 
 target_link_libraries(sparse_solver_gym_tests
