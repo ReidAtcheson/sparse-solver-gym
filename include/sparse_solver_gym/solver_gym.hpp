@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
-#include <nlohmann/json.hpp>
+#include <complex>
 
 namespace sparse_solver_gym {
 
@@ -31,7 +31,12 @@ struct MatrixView{
   int64_t nrows;
   int64_t ncols;
   int64_t ld;
-  void* data;
+  union {
+    float* f32;
+    double* f64;
+    std::complex<float>* c64;
+    std::complex<double>* c128;
+  } data;
 };
 
 enum class SparseStorage{
@@ -44,10 +49,20 @@ struct SparseGraph{
   IType itype;
   int64_t nrows;
   int64_t ncols;
+  int64_t nnz;
   SparseStorage storage;
-  void* rids; // Null if CSR
-  void* cids; // Null if CSC
-  void* offs; // Null if COO
+  union {
+    int32_t* i32;
+    int64_t* i64;
+  } rids; // Null if CSR
+  union {
+    int32_t* i32;
+    int64_t* i64;
+  } cids; // Null if CSC
+  union {
+    int32_t* i32;
+    int64_t* i64;
+  } offs; // Null if COO
 };
 
 // Intended calling sequence:
@@ -64,6 +79,7 @@ class ISolver{
     virtual void symbolic(SparseGraph& g) = 0;
     virtual void numeric(DType dtype,void* data) = 0;
     virtual void solve(const MatrixView& in,MatrixView& out) = 0;
+    virtual ~ISolver() = default;
 };
 
 class IBenchmarkLogger{
@@ -74,16 +90,24 @@ class IBenchmarkLogger{
       numeric,
       solve
     };
+    // This contains all possible information we will log as official
+    // outputs from the benchmarking suite. error/residual is 
+    // only populated for solves, duration is always populated.
     struct Log{
       Phase phase;
       int64_t duration_ns;
+      double relative_error;
+      double relative_residual;
     };
+    virtual void record_arbitrary(const std::string&) = 0;
     virtual void record(const Log& log) = 0;
+    virtual ~IBenchmarkLogger() = default;
 };
 
 class IBenchmark{
   public:
     virtual void run(ISolver* solver,IBenchmarkLogger* logger) = 0;
+    virtual ~IBenchmark() = default;
 };
 
 
