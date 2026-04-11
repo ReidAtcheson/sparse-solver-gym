@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <string>
 #include <complex>
+#include <variant>
+#include <vector>
 
 namespace sparse_solver_gym {
 
@@ -74,33 +76,30 @@ struct SparseGraph{
 // Possible improvements: Enable low rank up/down dates, possibly sparse.
 class ISolver{
   public:
+
+    // For these benchmarks the reason for failure
+    // is not important, but we do need to be able
+    // to handle failure and count it
+    enum class Status{
+      Ok,
+      Fail
+    };
     virtual std::string name() = 0;
-    virtual void setup() = 0;
-    virtual void symbolic(SparseGraph& g) = 0;
-    virtual void numeric(DType dtype,void* data) = 0;
-    virtual void solve(const MatrixView& in,MatrixView& out) = 0;
+    virtual Status setup() = 0;
+    virtual Status symbolic(SparseGraph& g) = 0;
+    virtual Status numeric(DType dtype,void* data) = 0;
+    virtual Status solve(const MatrixView& in,MatrixView& out) = 0;
     virtual ~ISolver() = default;
 };
 
 class IBenchmarkLogger{
   public:
-    enum class Phase{
-      setup,
-      symbolic,
-      numeric,
-      solve
+    struct Value{
+      std::string_view label;
+      std::variant<double,int64_t,bool> d;
     };
-    // This contains all possible information we will log as official
-    // outputs from the benchmarking suite. error/residual is 
-    // only populated for solves, duration is always populated.
-    struct Log{
-      Phase phase;
-      int64_t duration_ns;
-      double relative_error;
-      double relative_residual;
-    };
-    virtual void record_arbitrary(const std::string&) = 0;
-    virtual void record(const Log& log) = 0;
+    using Event = std::vector<Value>;
+    virtual void record(const Event& log) = 0;
     virtual ~IBenchmarkLogger() = default;
 };
 
