@@ -3,6 +3,7 @@ include(GoogleTest)
 
 add_executable(sparse_solver_gym_tests
     json_test.cpp
+    solver_gym_c_api_test.cpp
     solver_gym_test.cpp
 )
 

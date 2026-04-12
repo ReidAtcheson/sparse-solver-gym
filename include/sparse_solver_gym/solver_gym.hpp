@@ -1,7 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <complex>
+#include <type_traits>
 #include <variant>
 #include <vector>
 #include <span>
@@ -43,6 +45,28 @@ struct MatrixView{
   } data;
 };
 
+using NumericValues = std::variant<
+  std::span<const float>,
+  std::span<const double>,
+  std::span<const std::complex<float>>,
+  std::span<const std::complex<double>>
+>;
+
+[[nodiscard]] inline DType dtype_of(const NumericValues& values) noexcept {
+  return std::visit([](const auto& typed_values) -> DType {
+    using T = std::remove_cv_t<typename std::decay_t<decltype(typed_values)>::element_type>;
+    if constexpr (std::is_same_v<T, float>) {
+      return DType::f32;
+    } else if constexpr (std::is_same_v<T, double>) {
+      return DType::f64;
+    } else if constexpr (std::is_same_v<T, std::complex<float>>) {
+      return DType::c64;
+    } else {
+      return DType::c128;
+    }
+  }, values);
+}
+
 enum class SparseStorage{
   Coo,
   Csc,
@@ -72,7 +96,7 @@ struct SparseGraph{
 // Intended calling sequence:
 // solver.setup() -- Once per process, init code.
 // solver.symbolic(graph) -- Once per graph
-// solver.numeric(dtype,data) -- must follow symbolic(), but can call multiple times
+// solver.numeric(values) -- must follow symbolic(), but can call multiple times
 // solver.solve(in,out) -- must follow numeric() but can call as many times as necessary
 //
 // Possible improvements: Enable low rank up/down dates, possibly sparse.
@@ -89,7 +113,7 @@ class ISolver{
     virtual std::string name() = 0;
     virtual Status setup() = 0;
     virtual Status symbolic(SparseGraph& g) = 0;
-    virtual Status numeric(DType dtype,void* data) = 0;
+    virtual Status numeric(const NumericValues& values) = 0;
     virtual Status solve(const MatrixView& in,MatrixView& out) = 0;
     virtual ~ISolver() = default;
 };

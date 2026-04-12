@@ -1,5 +1,6 @@
 add_library(sparse_solver_gym STATIC
     solver_gym.cpp
+    solver_gym_cxx.cpp
 )
 
 target_link_libraries(sparse_solver_gym
@@ -12,4 +13,4 @@ target_include_directories(sparse_solver_gym
         ${PROJECT_SOURCE_DIR}/include
 )
 
-target_compile_features(sparse_solver_gym PUBLIC cxx_std_17)
+target_compile_features(sparse_solver_gym PUBLIC cxx_std_23)
