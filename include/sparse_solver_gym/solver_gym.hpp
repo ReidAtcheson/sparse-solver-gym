@@ -4,6 +4,8 @@
 #include <complex>
 #include <variant>
 #include <vector>
+#include <span>
+
 
 namespace sparse_solver_gym {
 
@@ -92,14 +94,46 @@ class ISolver{
     virtual ~ISolver() = default;
 };
 
+// The purpose of this class is to allow flexible logging
+// of values that can be correlated to frames (e.g. frames
+// could be timespans representing beginning and ending of
+// solver phases like solve,numeric,symbolic,etc). This
+// Allows us to be flexible on what we log and possibly
+// the introduction of new phases which we don't currently
+// support.
 class IBenchmarkLogger{
   public:
+    using FrameId = uint16_t;
+    enum class FrameTag{
+      beg,
+      end
+    };
+    struct Frame{
+      FrameId id;
+      FrameTag tag;
+    };
     struct Value{
       std::string_view label;
-      std::variant<double,int64_t,bool> d;
+      //Monostate indicates a cleared state
+      std::variant<std::monostate,double,int64_t,bool> d;
     };
-    using Event = std::vector<Value>;
-    virtual void record(const Event& log) = 0;
+    //We can correlate logged values with frames by emitting
+    //in between beg,end tags.
+    //
+    //Note the span of values. For efficiency values that we log should be
+    //preallocated, modified in-place, and emitted.
+    using Event = std::variant<Frame,std::span<Value>>;
+    //Receive an event and do something with it (aggregate, dump to trace, etc).
+    //
+    //IF clear is set, we should clear all log values and require them to be set again
+    //on the next `on_event` emit.
+    virtual void on_event(Event&, bool clear = true) = 0;
+    //given a frame label, return a FrameId unique to that label.
+    //It should comfortably live in uint16_t space and we need to return
+    //the same frame label for the same string.
+    virtual FrameId get_frame(const std::string&) = 0;
+    //The benchmark logger should manage lifetime of frame labels.
+    virtual std::string_view get_frame_label(FrameId) = 0;
     virtual ~IBenchmarkLogger() = default;
 };
 
