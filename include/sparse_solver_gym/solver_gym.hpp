@@ -115,7 +115,7 @@ class IBenchmarkLogger{
     struct Value{
       std::string_view label;
       //Monostate indicates a cleared state
-      std::variant<std::monostate,double,int64_t,bool> d;
+      std::variant<double,int64_t,bool> d;
     };
     //We can correlate logged values with frames by emitting
     //in between beg,end tags.
@@ -124,10 +124,7 @@ class IBenchmarkLogger{
     //preallocated, modified in-place, and emitted.
     using Event = std::variant<Frame,std::span<Value>>;
     //Receive an event and do something with it (aggregate, dump to trace, etc).
-    //
-    //IF clear is set, we should clear all log values and require them to be set again
-    //on the next `on_event` emit.
-    virtual void on_event(Event&, bool clear = true) = 0;
+    virtual void on_event(const Event&) = 0;
     //given a frame label, return a FrameId unique to that label.
     //It should comfortably live in uint16_t space and we need to return
     //the same frame label for the same string.
