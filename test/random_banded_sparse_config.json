@@ -1,0 +1,15 @@
+[
+  {
+    "type": "random_banded_sparse",
+    "name": "test_random_banded_sparse",
+    "n": 6,
+    "matrix_count": 3,
+    "nnz_per_row": 3,
+    "bandwidth": 2,
+    "value_min": -1.0,
+    "value_max": 1.0,
+    "solution_min": -1.0,
+    "solution_max": 1.0,
+    "seed": 7
+  }
+]
